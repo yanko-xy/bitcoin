@@ -49,6 +49,5 @@ func (f *FieldElement) Substract(other *FieldElement) *FieldElement {
 		(b + c) % order = a, a - b => (a + (-b)) % order
 	*/
 
-	// TODO
-	return nil
+	return f.Add(other.Negate())
 }

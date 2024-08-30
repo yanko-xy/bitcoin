@@ -1,6 +1,9 @@
 package elliptic_curve
 
-import "fmt"
+import (
+	"fmt"
+	"math"
+)
 
 type FieldElement struct {
 	order uint64 // field order
@@ -30,10 +33,14 @@ func (f *FieldElement) EqualTo(other *FieldElement) bool {
 	return f.order == other.order && f.num == other.num
 }
 
-func (f *FieldElement) Add(other *FieldElement) *FieldElement {
+func (f *FieldElement) checkOrder(other *FieldElement) {
 	if f.order != other.order {
 		panic("Add need to do on the field element with the same order.")
 	}
+}
+
+func (f *FieldElement) Add(other *FieldElement) *FieldElement {
+	f.checkOrder(other)
 
 	return NewFieldElement(f.order, (f.num+other.num)%f.order)
 }
@@ -50,4 +57,20 @@ func (f *FieldElement) Substract(other *FieldElement) *FieldElement {
 	*/
 
 	return f.Add(other.Negate())
+}
+
+func (f *FieldElement) Multiplie(other *FieldElement) *FieldElement {
+	f.checkOrder(other)
+
+	// Arithmetic multiplie over modulur of the order
+	return NewFieldElement(f.order, (f.num*other.num)%f.order)
+}
+
+func (f *FieldElement) Power(power int) *FieldElement {
+	// Arithmetic power over modulur of the order
+	return NewFieldElement(f.order, uint64(math.Pow(float64(f.num), float64(power)))%f.order)
+}
+
+func (f *FieldElement) ScalarMul(val uint64) *FieldElement {
+	return NewFieldElement(f.order, (f.num*val)%f.order)
 }

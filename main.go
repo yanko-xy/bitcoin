@@ -19,22 +19,32 @@ func SolvField19MultiplieSet() {
 	}
 }
 
+/*
+p is field order, p = 7, 11, 17, 19, 31
+select any element k in the field with order p, compute k ^ (p-1) what is the result
+=> {1 ^ (p-1) % p, 2 ^ (p-1) % p, ......, (p-1) ^ (p-1) % p}
+
+for any element k in the field with order => k ^ (p-1) % p == 1
+*/
+func ComputeFieldOrderPower() {
+	orders := []int{7, 11, 17, 19, 31}
+	for _, p := range orders {
+		fmt.Printf("value of p is %d\n", p)
+		for i := 1; i < p; i++ {
+			elem := ecc.NewFieldElement(big.NewInt(int64(p)), big.NewInt(int64(i)))
+			fmt.Printf("for element %v, its power of p - 1 is %v\n", elem, elem.Power(big.NewInt(int64(p-1))))
+		}
+	}
+}
+
 func main() {
-	f44 := ecc.NewFieldElement(big.NewInt(57), big.NewInt(44))
-	f33 := ecc.NewFieldElement(big.NewInt(57), big.NewInt(33))
-	res := f44.Add(f33)
-	fmt.Printf("field element 44 add to field element 33 is %v\n", res)
-	// -44 => 57 - 44 = 13
-	fmt.Printf("negate to field element 44 is %v\n", f44.Negate())
+	// ComputeFieldOrderPower()
+	f2 := ecc.NewFieldElement(big.NewInt(19), big.NewInt(2))
+	f7 := ecc.NewFieldElement(big.NewInt(19), big.NewInt(7))
+	fmt.Printf("field element 2 / 7 is %v\n", f2.Divide(f7))
 
-	// 44 - 33
-	fmt.Printf("field element  44 - 33 is %v\n", f44.Substract(f33))
-	// 33 - 44
-	fmt.Printf("field element 33 - 44 is %v\n", f33.Substract(f44))
-	// check (46 + 44) % 57 == 33
-	fmt.Printf("check 46 + 43 over modulur 57 %v\n", (46+44)%57)
 	f46 := ecc.NewFieldElement(big.NewInt(57), big.NewInt(46))
-	fmt.Printf("field element 46 + 44 is %v\n", f46.Add(f44))
-
-	SolvField19MultiplieSet()
+	fmt.Printf("field element 46 * 46 with order 57 is %v\n", f46.Multiply(f46))
+	fmt.Printf("field element 46 with power of 58 is %v\n", f46.Power(big.NewInt(58)))
+	// 58 % 56 = 2
 }

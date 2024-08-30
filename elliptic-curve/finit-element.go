@@ -75,8 +75,10 @@ func (f *FieldElement) Multiply(other *FieldElement) *FieldElement {
 
 func (f *FieldElement) Power(power *big.Int) *FieldElement {
 	// Arithmetic power over modulur of the order
+	// k ^ (p - 1) % p = 1, power > p - 1 => power % (p - 1)
 	var op big.Int
-	powerRes := op.Exp(f.num, power, nil)
+	t := op.Mod(power, op.Sub(f.order, big.NewInt(1)))
+	powerRes := op.Exp(f.num, t, nil)
 	modRes := op.Mod(powerRes, f.order)
 	return NewFieldElement(f.order, modRes)
 }
@@ -86,4 +88,12 @@ func (f *FieldElement) ScalarMul(val *big.Int) *FieldElement {
 	res := op.Mul(f.num, val)
 	res = op.Mod(res, f.order)
 	return NewFieldElement(f.order, res)
+}
+
+func (f *FieldElement) Divide(other *FieldElement) *FieldElement {
+	f.checkOrder(other)
+	// a / b => a . b ^ (p -2)
+	var op big.Int
+	otherReverse := other.Power(op.Sub(f.order, big.NewInt(int64(2))))
+	return f.Multiply(otherReverse)
 }

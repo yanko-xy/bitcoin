@@ -1,6 +1,7 @@
 package elliptic_curve
 
 import (
+	"fmt"
 	"math/big"
 	"testing"
 
@@ -33,4 +34,12 @@ func TestCheckPointOnCurve(t *testing.T) {
 	assert.Panics(t, func() {
 		NewEllipticCurvePoint(big.NewInt(5), big.NewInt(7), big.NewInt(5), big.NewInt(7))
 	})
+}
+
+func TestAddIdentity(t *testing.T) {
+	p := NewEllipticCurvePoint(big.NewInt(-1), big.NewInt(-1), big.NewInt(5), big.NewInt(7))
+	fmt.Printf("p is %s\n", p)
+
+	identity := NewEllipticCurvePoint(nil, nil, big.NewInt(5), big.NewInt(7))
+	assert.True(t, p.Add(identity).Equal(p))
 }

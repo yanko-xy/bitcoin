@@ -38,7 +38,7 @@ func (f *FieldElement) EqualTo(other *FieldElement) bool {
 
 func (f *FieldElement) checkOrder(other *FieldElement) {
 	if f.order.Cmp(other.order) != 0 {
-		panic("Add need to do on the field element with the same order.")
+		panic("need to do on the field element with the same order.")
 	}
 }
 

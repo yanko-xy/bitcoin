@@ -77,6 +77,34 @@ func NewEllipticCurvePoint(x, y, a, b *FieldElement) *Point {
 	}
 }
 
+/*
+G != identity {G, 2*G, ..., n*G} n*G identity
+k * G => Q easy  G, Q => k impossible
+k*G => G + G + ... + G
+k => 13(1101) (2^3 + 2^2 + 2^0) * G => 2^3*G + 2^2*G + 2^0*G
+=> (G<<3) + (G<<2) + (G<<0) k has t 1s in binary form, we can do t times of addition
+1 trillion, 40 bits in binary form
+we at most do 40 times of addition => 1 trillion times
+*/
+func (p *Point) ScalarMul(scalar *big.Int) *Point {
+	if scalar == nil {
+		panic("scalar can not be nil")
+	}
+
+	// 13 => "1101"
+	binaryFrom := fmt.Sprintf("%b", scalar)
+	current := p
+	result := NewEllipticCurvePoint(nil, nil, p.a, p.b)
+	for i := len(binaryFrom) - 1; i >= 0; i-- {
+		if binaryFrom[i] == '1' {
+			result = result.Add(current)
+		}
+		// left shift by 1 place, just like add to self
+		current = current.Add(current)
+	}
+	return result
+}
+
 func (p *Point) Add(other *Point) *Point {
 	// check two points are on the same curve
 	if !p.a.EqualTo(other.a) || !p.b.EqualTo(other.b) {

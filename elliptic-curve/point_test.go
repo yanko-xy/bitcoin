@@ -82,3 +82,27 @@ func TestAdd(t *testing.T) {
 	p3 := NewEllipticCurvePoint(NewFieldElement(big.NewInt(223), big.NewInt(170)), NewFieldElement(big.NewInt(223), big.NewInt(142)), a, b)
 	assert.True(t, p1.Add(p2).Equal(p3))
 }
+
+func TestScalarMul(t *testing.T) {
+	// 2 * (192, 105)
+	p1 := newPoint(t, 192, 105, 0, 7)
+	res := newPoint(t, 49, 71, 0, 7)
+	assert.True(t, p1.ScalarMul(big.NewInt(2)).Equal(res))
+
+	// 2 * (47, 71)
+	p2 := newPoint(t, 47, 71, 0, 7)
+	res = newPoint(t, 36, 111, 0, 7)
+	assert.True(t, p2.ScalarMul(big.NewInt(2)).Equal(res))
+}
+
+func newPoint(t *testing.T, x, y, a, b int64) *Point {
+	xF := NewFieldElement(big.NewInt(223), big.NewInt(x))
+	yF := NewFieldElement(big.NewInt(223), big.NewInt(y))
+	aF := NewFieldElement(big.NewInt(223), big.NewInt(a))
+	bF := NewFieldElement(big.NewInt(223), big.NewInt(b))
+	var p *Point
+	assert.NotPanics(t, func() {
+		p = NewEllipticCurvePoint(xF, yF, aF, bF)
+	})
+	return p
+}

@@ -52,6 +52,13 @@ func TestAddVertical(t *testing.T) {
 	assert.True(t, p1.Add(p2).Equal(indentity))
 }
 
+func TestAddSelf(t *testing.T) {
+	// C = A + A
+	A := NewEllipticCurvePoint(big.NewInt(-1), big.NewInt(-1), big.NewInt(5), big.NewInt(7))
+	C := NewEllipticCurvePoint(big.NewInt(18), big.NewInt(77), big.NewInt(5), big.NewInt(7))
+	assert.True(t, A.Add(A).Equal(C))
+}
+
 func TestAdd(t *testing.T) {
 	// C = A(2, 5) + B(-1, -1)
 	A := NewEllipticCurvePoint(big.NewInt(2), big.NewInt(5), big.NewInt(5), big.NewInt(7))

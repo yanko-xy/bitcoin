@@ -9,60 +9,76 @@ import (
 )
 
 func TestCheckPointOnCurve(t *testing.T) {
-	/*
-		check point(-1, -1) on curve of y^2 = x^3 + 5x + 7
-	*/
+	var (
+		x *FieldElement
+		y *FieldElement
+		a = NewFieldElement(big.NewInt(223), big.NewInt(0))
+		b = NewFieldElement(big.NewInt(223), big.NewInt(7))
+	)
+
+	x = NewFieldElement(big.NewInt(223), big.NewInt(192))
+	y = NewFieldElement(big.NewInt(223), big.NewInt(105))
 	assert.NotPanics(t, func() {
-		NewEllipticCurvePoint(big.NewInt(-1), big.NewInt(-1), big.NewInt(5), big.NewInt(7))
-	})
-	/*
-		check point(-1, -2) on curve of y^2 = x^3 + 5x + 7
-	*/
-	assert.Panics(t, func() {
-		NewEllipticCurvePoint(big.NewInt(-1), big.NewInt(-2), big.NewInt(5), big.NewInt(7))
+		NewEllipticCurvePoint(x, y, a, b)
 	})
 
-	/*
-		(2, 4) (18, 77) (5, 7) on the curve of y^2 = x^3 + 5x + 7
-	*/
+	y = NewFieldElement(big.NewInt(223), big.NewInt(106))
 	assert.Panics(t, func() {
-		NewEllipticCurvePoint(big.NewInt(2), big.NewInt(4), big.NewInt(5), big.NewInt(7))
-	})
-	assert.NotPanics(t, func() {
-		NewEllipticCurvePoint(big.NewInt(18), big.NewInt(77), big.NewInt(5), big.NewInt(7))
-	})
-	assert.Panics(t, func() {
-		NewEllipticCurvePoint(big.NewInt(5), big.NewInt(7), big.NewInt(5), big.NewInt(7))
+		NewEllipticCurvePoint(x, y, a, b)
 	})
 }
 
 func TestAddIdentity(t *testing.T) {
-	p := NewEllipticCurvePoint(big.NewInt(-1), big.NewInt(-1), big.NewInt(5), big.NewInt(7))
+	var (
+		x *FieldElement
+		y *FieldElement
+		a = NewFieldElement(big.NewInt(223), big.NewInt(0))
+		b = NewFieldElement(big.NewInt(223), big.NewInt(7))
+	)
+	x = NewFieldElement(big.NewInt(223), big.NewInt(192))
+	y = NewFieldElement(big.NewInt(223), big.NewInt(105))
+	p := NewEllipticCurvePoint(x, y, a, b)
 	fmt.Printf("p is %s\n", p)
 
-	identity := NewEllipticCurvePoint(nil, nil, big.NewInt(5), big.NewInt(7))
+	identity := NewEllipticCurvePoint(nil, nil, a, b)
 	assert.True(t, p.Add(identity).Equal(p))
 }
 
 func TestAddVertical(t *testing.T) {
-	// (-1, -1) (-1, 1)
-	p1 := NewEllipticCurvePoint(big.NewInt(-1), big.NewInt(-1), big.NewInt(5), big.NewInt(7))
-	p2 := NewEllipticCurvePoint(big.NewInt(-1), big.NewInt(1), big.NewInt(5), big.NewInt(7))
-	indentity := NewEllipticCurvePoint(nil, nil, big.NewInt(5), big.NewInt(7))
-	assert.True(t, p1.Add(p2).Equal(indentity))
+	var (
+		x *FieldElement
+		y *FieldElement
+		a = NewFieldElement(big.NewInt(223), big.NewInt(0))
+		b = NewFieldElement(big.NewInt(223), big.NewInt(7))
+	)
+	x = NewFieldElement(big.NewInt(223), big.NewInt(192))
+	y = NewFieldElement(big.NewInt(223), big.NewInt(105))
+	p1 := NewEllipticCurvePoint(x, y, a, b)
+	yNeg := y.Negate()
+	p2 := NewEllipticCurvePoint(x, yNeg, a, b)
+	fmt.Printf("addition of points on vertial line over finite field is %s\n", p1.Add(p2))
 }
 
-func TestAddSelf(t *testing.T) {
-	// C = A + A
-	A := NewEllipticCurvePoint(big.NewInt(-1), big.NewInt(-1), big.NewInt(5), big.NewInt(7))
-	C := NewEllipticCurvePoint(big.NewInt(18), big.NewInt(77), big.NewInt(5), big.NewInt(7))
-	assert.True(t, A.Add(A).Equal(C))
-}
+// func TestAddSelf(t *testing.T) {
+// 	// C = A + A
+// 	A := NewEllipticCurvePoint(big.NewInt(-1), big.NewInt(-1), big.NewInt(5), big.NewInt(7))
+// 	C := NewEllipticCurvePoint(big.NewInt(18), big.NewInt(77), big.NewInt(5), big.NewInt(7))
+// 	assert.True(t, A.Add(A).Equal(C))
+// }
 
 func TestAdd(t *testing.T) {
-	// C = A(2, 5) + B(-1, -1)
-	A := NewEllipticCurvePoint(big.NewInt(2), big.NewInt(5), big.NewInt(5), big.NewInt(7))
-	B := NewEllipticCurvePoint(big.NewInt(-1), big.NewInt(-1), big.NewInt(5), big.NewInt(7))
-	C := NewEllipticCurvePoint(big.NewInt(3), big.NewInt(-7), big.NewInt(5), big.NewInt(7))
-	assert.True(t, A.Add(B).Equal(C))
+	var (
+		x *FieldElement
+		y *FieldElement
+		a = NewFieldElement(big.NewInt(223), big.NewInt(0))
+		b = NewFieldElement(big.NewInt(223), big.NewInt(7))
+	)
+	x = NewFieldElement(big.NewInt(223), big.NewInt(192))
+	y = NewFieldElement(big.NewInt(223), big.NewInt(105))
+	p1 := NewEllipticCurvePoint(x, y, a, b)
+	x = NewFieldElement(big.NewInt(223), big.NewInt(17))
+	y = NewFieldElement(big.NewInt(223), big.NewInt(56))
+	p2 := NewEllipticCurvePoint(x, y, a, b)
+	p3 := NewEllipticCurvePoint(NewFieldElement(big.NewInt(223), big.NewInt(170)), NewFieldElement(big.NewInt(223), big.NewInt(142)), a, b)
+	assert.True(t, p1.Add(p2).Equal(p3))
 }

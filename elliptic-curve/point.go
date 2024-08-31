@@ -17,32 +17,40 @@ const (
 
 type Point struct {
 	// coefficients of curve
-	a *big.Int
-	b *big.Int
+	a *FieldElement
+	b *FieldElement
 	// x, y should be the point on the curve
-	x *big.Int
-	y *big.Int
+	x *FieldElement
+	y *FieldElement
 }
 
-func OpOnBig(x, y *big.Int, opType OP_TYPE) *big.Int {
-	var op big.Int
+func OpOnBig(x, y *FieldElement, scalar *big.Int, opType OP_TYPE) *FieldElement {
 	switch opType {
 	case ADD:
-		return op.Add(x, y)
+		return x.Add(y)
 	case SUB:
-		return op.Sub(x, y)
+		return x.Substract(y)
 	case MUL:
-		return op.Mul(x, y)
+		if y != nil {
+			return x.Multiply(y)
+		}
+		if scalar != nil {
+			return x.ScalarMul(scalar)
+		}
+		panic("error in multiply")
 	case DIV:
-		return op.Div(x, y)
+		return x.Divide(y)
 	case EXP:
-		return op.Exp(x, y, nil)
+		if scalar == nil {
+			panic("scalar should not be nil for EXP")
+		}
+		return x.Power(scalar)
 	}
 
 	panic("should not come to here")
 }
 
-func NewEllipticCurvePoint(x, y, a, b *big.Int) *Point {
+func NewEllipticCurvePoint(x, y, a, b *FieldElement) *Point {
 	if x == nil && y == nil {
 		return &Point{
 			x: x,
@@ -52,11 +60,11 @@ func NewEllipticCurvePoint(x, y, a, b *big.Int) *Point {
 		}
 	}
 
-	left := OpOnBig(y, big.NewInt(2), EXP)
-	x3 := OpOnBig(x, big.NewInt(3), EXP)
-	ax := OpOnBig(a, x, MUL)
-	right := OpOnBig(OpOnBig(x3, ax, ADD), b, ADD)
-	if left.Cmp(right) != 0 {
+	left := OpOnBig(y, nil, big.NewInt(2), EXP)
+	x3 := OpOnBig(x, nil, big.NewInt(3), EXP)
+	ax := OpOnBig(a, x, nil, MUL)
+	right := OpOnBig(OpOnBig(x3, ax, nil, ADD), b, nil, ADD)
+	if !left.EqualTo(right) {
 		err := fmt.Sprintf("Point(%v, %v) is not on the curve with a:%v, b:%v\n", x, y, a, b)
 		panic(err)
 	}
@@ -71,7 +79,7 @@ func NewEllipticCurvePoint(x, y, a, b *big.Int) *Point {
 
 func (p *Point) Add(other *Point) *Point {
 	// check two points are on the same curve
-	if p.a.Cmp(other.a) != 0 || p.b.Cmp(other.b) != 0 {
+	if !p.a.EqualTo(other.a) || !p.b.EqualTo(other.b) {
 		panic("given two points are not on the same curve")
 	}
 
@@ -84,7 +92,8 @@ func (p *Point) Add(other *Point) *Point {
 	}
 
 	// points are on the verical A(x,y), b(x,-y)
-	if p.x.Cmp(other.x) == 0 && OpOnBig(p.y, other.y, ADD).Cmp(big.NewInt(0)) == 0 {
+	zero := NewFieldElement(p.x.order, big.NewInt(0))
+	if p.x.EqualTo(other.x) && OpOnBig(p.y, other.y, nil, ADD).EqualTo(zero) {
 		return &Point{
 			x: nil,
 			y: nil,
@@ -95,31 +104,31 @@ func (p *Point) Add(other *Point) *Point {
 
 	// find slope of line AB
 	// x1 -> p.x, y1 -> p.y, x2 -> other.x, y2 -> other.y
-	var numerator *big.Int
-	var denominator *big.Int
-	if p.x.Cmp(other.x) == 0 && p.y.Cmp(other.y) == 0 {
+	var numerator *FieldElement
+	var denominator *FieldElement
+	if p.x.EqualTo(other.x) && p.y.EqualTo(other.y) {
 		// slope = (3*x^2+a) / 2y
-		xSqrt := OpOnBig(p.x, big.NewInt(2), EXP)
-		threeXSqrt := OpOnBig(big.NewInt(3), xSqrt, MUL)
-		numerator = OpOnBig(threeXSqrt, p.a, ADD)
-		denominator = OpOnBig(big.NewInt(2), p.y, MUL)
+		xSqrt := OpOnBig(p.x, nil, big.NewInt(2), EXP)
+		threeXSqrt := OpOnBig(xSqrt, nil, big.NewInt(3), MUL)
+		numerator = OpOnBig(threeXSqrt, p.a, nil, ADD)
+		denominator = OpOnBig(p.y, nil, big.NewInt(2), MUL)
 	} else {
 		// s= (y2-y1) / (x2-x1)
-		numerator = OpOnBig(other.y, p.y, SUB)
-		denominator = OpOnBig(other.x, p.x, SUB)
+		numerator = OpOnBig(other.y, p.y, nil, SUB)
+		denominator = OpOnBig(other.x, p.x, nil, SUB)
 	}
 
-	slope := OpOnBig(numerator, denominator, DIV)
+	slope := OpOnBig(numerator, denominator, nil, DIV)
 	// s^2
-	slopeSqrt := OpOnBig(slope, big.NewInt(2), EXP)
+	slopeSqrt := OpOnBig(slope, nil, big.NewInt(2), EXP)
 	// x3 = s^2 - x1 - x2
-	x3 := OpOnBig(OpOnBig(slopeSqrt, p.x, SUB), other.x, SUB)
+	x3 := OpOnBig(OpOnBig(slopeSqrt, p.x, nil, SUB), other.x, nil, SUB)
 	// x3 - x1
-	x3Minusx1 := OpOnBig(x3, p.x, SUB)
+	x3Minusx1 := OpOnBig(x3, p.x, nil, SUB)
 	// y3 = s(x3 - x1) + y1
-	y3 := OpOnBig(OpOnBig(slope, x3Minusx1, MUL), p.y, ADD)
+	y3 := OpOnBig(OpOnBig(slope, x3Minusx1, nil, MUL), p.y, nil, ADD)
 	// -y3
-	minusy3 := OpOnBig(y3, big.NewInt(-1), MUL)
+	minusy3 := OpOnBig(y3, nil, big.NewInt(-1), MUL)
 
 	return &Point{
 		x: x3,
@@ -130,18 +139,26 @@ func (p *Point) Add(other *Point) *Point {
 }
 
 func (p *Point) String() string {
-	return fmt.Sprintf("{x: %s, y: %s, a: %s, b: %s}", p.x.String(), p.y.String(), p.a.String(), p.b.String())
+	xString := "nil"
+	yString := "nil"
+	if p.x != nil {
+		xString = p.x.String()
+	}
+	if p.y != nil {
+		yString = p.y.String()
+	}
+	return fmt.Sprintf("{x: %s, y: %s, a: %s, b: %s}", xString, yString, p.a.String(), p.b.String())
 }
 
 func (p *Point) Equal(other *Point) bool {
-	if p.a.Cmp(other.a) == 0 && p.b.Cmp(other.b) == 0 && p.x.Cmp(other.x) == 0 && p.y.Cmp(other.y) == 0 {
+	if p.a.EqualTo(other.a) && p.b.EqualTo(other.b) && p.x.EqualTo(other.x) && p.y.EqualTo(other.y) {
 		return true
 	}
 	return false
 }
 
 func (p *Point) NotEqual(other *Point) bool {
-	if p.a.Cmp(other.a) != 0 || p.b.Cmp(other.b) != 0 || p.x.Cmp(other.x) != 0 || p.y.Cmp(other.y) != 0 {
+	if !p.a.EqualTo(other.a) || !p.b.EqualTo(other.b) || !p.x.EqualTo(other.x) || !p.y.EqualTo(other.y) {
 		return true
 	}
 	return false

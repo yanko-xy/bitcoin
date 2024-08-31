@@ -83,8 +83,39 @@ func (p *Point) Add(other *Point) *Point {
 		return p
 	}
 
-	// TODO
-	return nil
+	// points are on the verical A(x,y), b(x,-y)
+	if p.x.Cmp(other.x) == 0 && OpOnBig(p.y, other.y, ADD).Cmp(big.NewInt(0)) == 0 {
+		return &Point{
+			x: nil,
+			y: nil,
+			a: p.a,
+			b: p.b,
+		}
+	}
+
+	// find slope of line AB
+	// x1 -> p.x, y1 -> p.y, x2 -> other.x, y2 -> other.y
+	numerator := OpOnBig(other.y, p.y, SUB)
+	denominator := OpOnBig(other.x, p.x, SUB)
+	// s= (y2-y1) / (x2-x1)
+	slope := OpOnBig(numerator, denominator, DIV)
+	// s^2
+	slopeSqrt := OpOnBig(slope, big.NewInt(2), EXP)
+	// x3 = s^2 - x1 - x2
+	x3 := OpOnBig(OpOnBig(slopeSqrt, p.x, SUB), other.x, SUB)
+	// x3 - x1
+	x3Minusx1 := OpOnBig(x3, p.x, SUB)
+	// y3 = s(x3 - x1) + y1
+	y3 := OpOnBig(OpOnBig(slope, x3Minusx1, MUL), p.y, ADD)
+	// -y3
+	minusy3 := OpOnBig(y3, big.NewInt(-1), MUL)
+
+	return &Point{
+		x: x3,
+		y: minusy3,
+		a: p.a,
+		b: p.b,
+	}
 }
 
 func (p *Point) String() string {

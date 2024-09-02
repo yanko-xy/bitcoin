@@ -115,3 +115,31 @@ func (f *FieldElement) Inverse() *FieldElement {
 	var op big.Int
 	return f.Power(op.Sub(f.order, big.NewInt(2)))
 }
+
+/*
+04x
+y^2 = x^3 + 7 => y
+w^2 = v => w
+1. p % 4 == 3, (p+1)/4 is integer
+2. Fermat's little w^(p-1)%p == 1, w^2 * 1 == w^2 * w^(p-1) => w^2=w^(p-1)
+3. p is prime => p is odd, (p+1)/2 is integer
+4. w^(p+1) = w^((p+1)/2) * w^((p+1)/2) => [w^((p+1)/2)]^2 = w^(p+1) = w^2
+w^((p+1)/2) == w
+5. w^(2*(p+1)/4) = w^((p+1)/2) => (w^2)^((p+1)/4) = w^((p+1)/2) = w
+6. (w^2)^((p+1)/4) = w^((p+1)/2) = w = v^((p+1)/4) == w
+
+v^((p+1)/4) == w
+*/
+func (f *FieldElement) Sqrt() *FieldElement {
+	// make sure (p+1) % 4 == 0
+	var opAdd big.Int
+	orderAddOne := opAdd.Add(f.order, big.NewInt(1))
+	var opMod big.Int
+	modRes := opMod.Mod(orderAddOne, big.NewInt(4))
+	if modRes.Cmp(big.NewInt(0)) != 0 {
+		panic("order plus one mod 4 is not 0")
+	}
+
+	var opDiv big.Int
+	return f.Power(opDiv.Div(orderAddOne, big.NewInt(4)))
+}

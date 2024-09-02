@@ -5,6 +5,8 @@ import (
 	"math/big"
 	"math/rand"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func SolvField19MultiplieSet() {
@@ -50,4 +52,18 @@ func TestDivideFiniteElement(t *testing.T) {
 	fmt.Printf("field element 46 * 46 with order 57 is %v\n", f46.Multiply(f46))
 	fmt.Printf("field element 46 with power of 58 is %v\n", f46.Power(big.NewInt(58)))
 	// 58 % 56 = 2
+}
+
+func TestSqrtFiniteElement(t *testing.T) {
+	x := new(big.Int)
+	x.SetString("7211a824f55b505228e4c3d5194c1fcfaa15a456abdf37f9b9d97a4040afc073", 16)
+	// y^2 = x^3 + 7
+	y2 := S256Field(x).Power(big.NewInt(3)).Add(S256Field(big.NewInt(7)))
+	y := y2.Sqrt()
+	fmt.Printf("y value of given x is %s\n", y)
+
+	// check (x,y) is on the curve
+	assert.NotPanics(t, func() {
+		NewEllipticCurvePoint(S256Field(x), y, S256Field(big.NewInt(0)), S256Field(big.NewInt(7)))
+	})
 }

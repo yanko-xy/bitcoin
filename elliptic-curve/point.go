@@ -233,3 +233,7 @@ func (p *Point) Verify(z *FieldElement, sig *Signature) bool {
 	total := (G.ScalarMul(u.num)).Add(p.ScalarMul(v.num))
 	return total.x.num.Cmp(sig.r.num) == 0
 }
+
+func (p *Point) Sec() string {
+	return fmt.Sprintf("04%064x%064x", p.x.num, p.y.num)
+}

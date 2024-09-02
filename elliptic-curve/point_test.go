@@ -197,6 +197,48 @@ func TestVerify(t *testing.T) {
 	assert.True(t, verifyRes)
 }
 
+/*
+When a user of bitcoin create a wallet, he/she need to publish the address of his or her wallet and
+he can receive or sending funds to others. Wallet address is actually public key we created at last section and
+encode in some kind of format called SEC(standards for efficient cryptography).
+SEC format has two forms they are uncompressed and compressed,let's check the uncompressed format first.
+For a public key P=(x,y), the coordinate of x and y are 32 bytes integer, we use the following steps to encode the key into uncompressed SEC format:
+
+1, the beginning byte set to 0x04,
+2, turn the x value into big-endian and append it after byte 0x04
+3, turn the y value into big-endian and append it after the end of x
+
+Let's see an example of SEC uncompressed format:
+
+047211a824f55b505228e4c3d5194c1fcfaa15a456abdf37f9b9d97a4040afc073dee6c89064984f03385237d92167c13e236446b417ab79a0fcae412ae3316b77
+
+let's split the chunk of data into three parts:
+
+1. beginning byte 0x04
+2. x value in big-endian: 7211a824f55b505228e4c3d5194c1fcfaa15a456abdf37f9b9d97a4040afc073
+3. y value in big-endian: dee6c89064984f03385237d92167c13e236446b417ab79a0fcae412ae3316b77
+let's check whether the point with the given x,y is on the bitcoin curve:
+*/
+func TestSec(t *testing.T) {
+	privateKey := NewPrivateKey(big.NewInt(5000))
+	publicKey := privateKey.GetPublicKey()
+	fmt.Printf("sec uncompress format for 5000*G is %s\n", publicKey.Sec())
+
+	// 2018 ^ 5
+	var expOp big.Int
+	privateKey = NewPrivateKey(expOp.Exp(big.NewInt(2018), big.NewInt(5), nil))
+	publicKey = privateKey.GetPublicKey()
+	fmt.Printf("sec uncompress format for 2018^5*G is %s\n", publicKey.Sec())
+
+	// 0xdeadbeef123456
+	p := new(big.Int)
+	p.SetString("deadbeef123456", 16)
+	privateKey = NewPrivateKey(p)
+	publicKey = privateKey.GetPublicKey()
+	fmt.Printf("sec uncompress format for 50xdeadbeef123456*G is %s\n", publicKey.Sec())
+
+}
+
 func newPoint(t *testing.T, x, y, a, b int64) *Point {
 	xF := NewFieldElement(big.NewInt(223), big.NewInt(x))
 	yF := NewFieldElement(big.NewInt(223), big.NewInt(y))

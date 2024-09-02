@@ -111,23 +111,7 @@ func (f *FieldElement) Divide(other *FieldElement) *FieldElement {
 	return f.Multiply(otherReverse)
 }
 
-func S256Point(x, y *big.Int) *Point {
-	a := S256Field(big.NewInt(0))
-	b := S256Field(big.NewInt(7))
-
-	if x == nil && y == nil {
-		return &Point{
-			x: nil,
-			y: nil,
-			a: a,
-			b: b,
-		}
-	}
-
-	return &Point{
-		x: S256Field(x),
-		y: S256Field(y),
-		a: a,
-		b: b,
-	}
+func (f *FieldElement) Inverse() *FieldElement {
+	var op big.Int
+	return f.Power(op.Sub(f.order, big.NewInt(2)))
 }

@@ -191,3 +191,53 @@ func (p *Point) NotEqual(other *Point) bool {
 	}
 	return false
 }
+
+func S256Point(x, y *big.Int) *Point {
+	a := S256Field(big.NewInt(0))
+	b := S256Field(big.NewInt(7))
+
+	if x == nil && y == nil {
+		return &Point{
+			x: nil,
+			y: nil,
+			a: a,
+			b: b,
+		}
+	}
+
+	return &Point{
+		x: S256Field(x),
+		y: S256Field(y),
+		a: a,
+		b: b,
+	}
+}
+
+func (p *Point) Verify(z *FieldElement, sig *Signature) bool {
+	/*
+		   7. any one who want to verify message z is created by owner of e:
+		      1). compute u = z/s, v=r/s
+		      2). compute u*G + v*P = (z/s)*G + (r/s)*P = (z/s)*G + (r/s)*eG
+		      = (z/s mod n)*G + (r*e/s mod n)*G = ((z+r*e)/s mod n)*G = k*G= R'
+		      3). take the x coordinate of R', compare with r
+		      if the same => verify the message z is created by owner of e
+
+		      (z, s, r, P) / is multiply inverse, it is not the normal arithmetic op
+			  n * G = identity
+			  n is prime, FieldElemnet(order=n, z/s)
+	*/
+	sInverse := sig.s.Inverse()
+	u := z.Multiply(sInverse)
+	v := sig.r.Multiply(sInverse)
+	G := p.getGenerator()
+	total := (G.ScalarMul(u.num)).Add(p.ScalarMul(v.num))
+	return total.x.num.Cmp(sig.r.num) == 0
+}
+
+func (p *Point) getGenerator() *Point {
+	Gx := new(big.Int)
+	Gx.SetString("79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798", 16)
+	Gy := new(big.Int)
+	Gy.SetString("483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8", 16)
+	return S256Point(Gx, Gy)
+}

@@ -13,6 +13,19 @@ type FieldElement struct {
 // overflow 64bits integer
 // huge number , +, *, ^ => overflow 64bits, we use large or big number
 
+func S256Field(num *big.Int) *FieldElement {
+	// 2^256 - 2^32 - 977
+	var op big.Int
+	twoExp256 := op.Exp(big.NewInt(2), big.NewInt(256), nil)
+	var op1 big.Int
+	twoExp32 := op1.Exp(big.NewInt(2), big.NewInt(32), nil)
+	var op2 big.Int
+	p := op2.Sub(twoExp256, twoExp32)
+	var op3 big.Int
+	pp := op3.Sub(p, big.NewInt(977))
+	return NewFieldElement(pp, num)
+}
+
 func NewFieldElement(order, num *big.Int) *FieldElement {
 	/*
 		init function for FieldElement
@@ -78,9 +91,9 @@ func (f *FieldElement) Power(power *big.Int) *FieldElement {
 	// k ^ (p - 1) % p = 1, power > p - 1 => power % (p - 1)
 	var op big.Int
 	t := op.Mod(power, op.Sub(f.order, big.NewInt(1)))
-	powerRes := op.Exp(f.num, t, nil)
-	modRes := op.Mod(powerRes, f.order)
-	return NewFieldElement(f.order, modRes)
+	powerRes := op.Exp(f.num, t, f.order)
+	// modRes := op.Mod(powerRes, f.order)
+	return NewFieldElement(f.order, powerRes)
 }
 
 func (f *FieldElement) ScalarMul(val *big.Int) *FieldElement {
@@ -96,4 +109,25 @@ func (f *FieldElement) Divide(other *FieldElement) *FieldElement {
 	var op big.Int
 	otherReverse := other.Power(op.Sub(f.order, big.NewInt(int64(2))))
 	return f.Multiply(otherReverse)
+}
+
+func S256Point(x, y *big.Int) *Point {
+	a := S256Field(big.NewInt(0))
+	b := S256Field(big.NewInt(7))
+
+	if x == nil && y == nil {
+		return &Point{
+			x: nil,
+			y: nil,
+			a: a,
+			b: b,
+		}
+	}
+
+	return &Point{
+		x: S256Field(x),
+		y: S256Field(y),
+		a: a,
+		b: b,
+	}
 }

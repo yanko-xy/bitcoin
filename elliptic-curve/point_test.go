@@ -8,6 +8,47 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestMain(t *testing.T) {
+	/*
+		G * k, {G, 2G, ..., nG} n*G->identity generator point
+		k is private key
+		k*G = Q pub key
+		(Q, G) impossible => k
+
+		p = 2^256 - 2^32 - 977
+		G(x,y)
+		Gx = 0x79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798
+		Gy = 0x483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8
+		n = 0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141
+		y^2 = x^3 + 7
+	*/
+	var op big.Int
+	twoExp256 := op.Exp(big.NewInt(2), big.NewInt(256), nil)
+	var op1 big.Int
+	twoExp32 := op1.Exp(big.NewInt(2), big.NewInt(32), nil)
+	var op2 big.Int
+	p := op2.Sub(twoExp256, twoExp32)
+	var op3 big.Int
+	pp := op3.Sub(p, big.NewInt(977))
+	fmt.Printf("pp is %s\n", pp)
+	Gx := new(big.Int)
+	Gx.SetString("79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798", 16)
+	Gy := new(big.Int)
+	Gy.SetString("483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8", 16)
+
+	x1 := NewFieldElement(pp, Gx)
+	y1 := NewFieldElement(pp, Gy)
+	a := NewFieldElement(pp, big.NewInt(0))
+	b := NewFieldElement(pp, big.NewInt(7))
+	G := NewEllipticCurvePoint(x1, y1, a, b)
+	fmt.Printf("G is on elliptic curve with value is %s\n", G)
+
+	G = S256Point(Gx, Gy)
+	n := new(big.Int)
+	n.SetString("fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141", 16)
+	fmt.Printf("n*G is :%s\n", G.ScalarMul(n))
+}
+
 func TestCheckPointOnCurve(t *testing.T) {
 	var (
 		x *FieldElement

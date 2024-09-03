@@ -27,3 +27,38 @@ func GetBitcoinValueN() *big.Int {
 	n.SetString("fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141", 16)
 	return n
 }
+
+func ParseSEC(secBin []byte) *Point {
+	// check the first byte to descide it is compressed or uncompressed
+	if secBin[0] == 4 {
+		// uncompressed
+		x := new(big.Int)
+		x.SetBytes(secBin[1:33])
+		y := new(big.Int)
+		y.SetBytes(secBin[33:65])
+		return S256Point(x, y)
+	}
+
+	// check first byte for y is odd or even
+	isEven := (secBin[0] == 2)
+	x := new(big.Int)
+	x.SetBytes(secBin[1:])
+	y2 := S256Field(x).Power(big.NewInt(3)).Add(S256Field(big.NewInt(7)))
+	y := y2.Sqrt()
+	var modOp big.Int
+	var yEven *FieldElement
+	var yOdd *FieldElement
+	if modOp.Mod(y.num, big.NewInt(2)).Cmp(big.NewInt(0)) == 0 {
+		yEven = y
+		yOdd = y.Negate() // p-y
+	} else {
+		yOdd = y
+		yEven = y.Negate()
+	}
+
+	if isEven {
+		return S256Point(x, yEven.num)
+	} else {
+		return S256Point(x, yOdd.num)
+	}
+}

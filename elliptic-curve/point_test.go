@@ -219,24 +219,42 @@ let's split the chunk of data into three parts:
 3. y value in big-endian: dee6c89064984f03385237d92167c13e236446b417ab79a0fcae412ae3316b77
 let's check whether the point with the given x,y is on the bitcoin curve:
 */
-func TestSec(t *testing.T) {
+func TestUmcompressedSec(t *testing.T) {
 	privateKey := NewPrivateKey(big.NewInt(5000))
 	publicKey := privateKey.GetPublicKey()
-	fmt.Printf("sec uncompress format for 5000*G is %s\n", publicKey.Sec())
+	fmt.Printf("sec uncompress format for 5000*G is %s\n", publicKey.Sec(false))
 
 	// 2018 ^ 5
 	var expOp big.Int
 	privateKey = NewPrivateKey(expOp.Exp(big.NewInt(2018), big.NewInt(5), nil))
 	publicKey = privateKey.GetPublicKey()
-	fmt.Printf("sec uncompress format for 2018^5*G is %s\n", publicKey.Sec())
+	fmt.Printf("sec uncompress format for 2018^5*G is %s\n", publicKey.Sec(false))
 
 	// 0xdeadbeef123456
 	p := new(big.Int)
 	p.SetString("deadbeef123456", 16)
 	privateKey = NewPrivateKey(p)
 	publicKey = privateKey.GetPublicKey()
-	fmt.Printf("sec uncompress format for 50xdeadbeef123456*G is %s\n", publicKey.Sec())
+	fmt.Printf("sec uncompress format for 50xdeadbeef123456*G is %s\n", publicKey.Sec(false))
+}
 
+func TestCompressedSec(t *testing.T) {
+	privateKey := NewPrivateKey(big.NewInt(5001))
+	publicKey := privateKey.GetPublicKey()
+	fmt.Printf("sec compress format for 5000*G is %s\n", publicKey.Sec(true))
+
+	// 2018 ^ 5
+	var expOp big.Int
+	privateKey = NewPrivateKey(expOp.Exp(big.NewInt(2018), big.NewInt(5), nil))
+	publicKey = privateKey.GetPublicKey()
+	fmt.Printf("sec compress format for 2018^5*G is %s\n", publicKey.Sec(true))
+
+	// 0xdeadbeef123456
+	p := new(big.Int)
+	p.SetString("deadbeef123456", 16)
+	privateKey = NewPrivateKey(p)
+	publicKey = privateKey.GetPublicKey()
+	fmt.Printf("sec compress format for 50xdeadbeef123456*G is %s\n", publicKey.Sec(true))
 }
 
 func newPoint(t *testing.T, x, y, a, b int64) *Point {

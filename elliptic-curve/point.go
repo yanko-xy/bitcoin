@@ -234,6 +234,32 @@ func (p *Point) Verify(z *FieldElement, sig *Signature) bool {
 	return total.x.num.Cmp(sig.r.num) == 0
 }
 
-func (p *Point) Sec() string {
-	return fmt.Sprintf("04%064x%064x", p.x.num, p.y.num)
+func (p *Point) Sec(compressed bool) string {
+	/*
+		04x
+		y^2 = x^3 + 7
+		(x,y) => (x, -y) => (x, p-y)
+		p is prime, if y is even then p-y is odd, if y is odd => p-y is even
+
+		first byte 02 if y is even, 03 if y is odd
+		02x
+		if y is odd => p-y otherwise y
+		03x
+		if y is odd => ok otherwise p-y => odd number
+	*/
+
+	if !compressed {
+		return fmt.Sprintf("04%064x%064x", p.x.num, p.y.num)
+	}
+
+	// maker sure y is even or odd for the first byte
+	var opMod big.Int
+	if opMod.Mod(p.y.num, big.NewInt(2)).Cmp(big.NewInt(0)) == 0 {
+		// y is even set first byte to 02
+		return fmt.Sprintf("02%064x", p.x.num)
+	} else {
+		// y is odd set first byte to 03
+		return fmt.Sprintf("03%064x", p.x.num)
+	}
+
 }

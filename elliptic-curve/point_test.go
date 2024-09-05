@@ -222,39 +222,45 @@ let's check whether the point with the given x,y is on the bitcoin curve:
 func TestUmcompressedSec(t *testing.T) {
 	privateKey := NewPrivateKey(big.NewInt(5000))
 	publicKey := privateKey.GetPublicKey()
-	fmt.Printf("sec uncompress format for 5000*G is %s\n", publicKey.Sec(false))
+	_, secBytes := publicKey.Sec(false)
+	fmt.Printf("sec uncompress format for 5000*G is %s\n", secBytes)
 
 	// 2018 ^ 5
 	var expOp big.Int
 	privateKey = NewPrivateKey(expOp.Exp(big.NewInt(2018), big.NewInt(5), nil))
 	publicKey = privateKey.GetPublicKey()
-	fmt.Printf("sec uncompress format for 2018^5*G is %s\n", publicKey.Sec(false))
+	_, secBytes = publicKey.Sec(false)
+	fmt.Printf("sec uncompress format for 2018^5*G is %s\n", secBytes)
 
 	// 0xdeadbeef123456
 	p := new(big.Int)
 	p.SetString("deadbeef123456", 16)
 	privateKey = NewPrivateKey(p)
 	publicKey = privateKey.GetPublicKey()
-	fmt.Printf("sec uncompress format for 50xdeadbeef123456*G is %s\n", publicKey.Sec(false))
+	_, secBytes = publicKey.Sec(false)
+	fmt.Printf("sec uncompress format for 50xdeadbeef123456*G is %s\n", secBytes)
 }
 
 func TestCompressedSec(t *testing.T) {
 	privateKey := NewPrivateKey(big.NewInt(5001))
 	publicKey := privateKey.GetPublicKey()
-	fmt.Printf("sec compress format for 5000*G is %s\n", publicKey.Sec(true))
+	_, secBytes := publicKey.Sec(true)
+	fmt.Printf("sec compress format for 5000*G is %s\n", secBytes)
 
 	// 2018 ^ 5
 	var expOp big.Int
 	privateKey = NewPrivateKey(expOp.Exp(big.NewInt(2018), big.NewInt(5), nil))
 	publicKey = privateKey.GetPublicKey()
-	fmt.Printf("sec compress format for 2018^5*G is %s\n", publicKey.Sec(true))
+	_, secBytes = publicKey.Sec(true)
+	fmt.Printf("sec compress format for 2018^5*G is %s\n", secBytes)
 
 	// 0xdeadbeef123456
 	p := new(big.Int)
 	p.SetString("deadbeef123456", 16)
 	privateKey = NewPrivateKey(p)
 	publicKey = privateKey.GetPublicKey()
-	fmt.Printf("sec compress format for 50xdeadbeef123456*G is %s\n", publicKey.Sec(true))
+	_, secBytes = publicKey.Sec(true)
+	fmt.Printf("sec compress format for 50xdeadbeef123456*G is %s\n", secBytes)
 }
 
 func newPoint(t *testing.T, x, y, a, b int64) *Point {
@@ -267,4 +273,37 @@ func newPoint(t *testing.T, x, y, a, b int64) *Point {
 		p = NewEllipticCurvePoint(xF, yF, aF, bF)
 	})
 	return p
+}
+
+func TestPublicKeyAddress(t *testing.T) {
+	/*
+		1. if the address for the wallet is on the mainnet, set first byte to 0x00
+		if testnet, set first byte to 0x6f
+
+		2. Encode the public into SEC(compressed or uncompressed), do sha256 hash
+		do ripemd160 hash, operation hash160
+
+		3. combine the byte from step 1 with bytes array from step 2
+
+		4. do a hash256 on the result of step 3, the get the first 4 bytes from the hash,
+		append the 4 bytes at the end of bytes array from step 3, operation base58checksum
+
+		5. combine bytes array from step 3 and step 4, theencode it by base58
+	*/
+	privateKey := NewPrivateKey(big.NewInt(5002))
+	publicKey := privateKey.GetPublicKey()
+	fmt.Printf("wallet address for 5002*G is %s\n", publicKey.Address(false, true))
+
+	// 2020^5*G
+	var expOp big.Int
+	privateKey = NewPrivateKey(expOp.Exp(big.NewInt(2020), big.NewInt(5), nil))
+	publicKey = privateKey.GetPublicKey()
+	fmt.Printf("wallet address for 2020^5*G is %s\n", publicKey.Address(true, true))
+
+	// 0x12345deadbeef
+	p := new(big.Int)
+	p.SetString("12345deadbeef", 16)
+	privateKey = NewPrivateKey(p)
+	publicKey = privateKey.GetPublicKey()
+	fmt.Printf("wallet address for 0x12345deadbeef*G is %s\n", publicKey.Address(true, false))
 }

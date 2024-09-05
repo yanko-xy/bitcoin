@@ -234,7 +234,7 @@ func (p *Point) Verify(z *FieldElement, sig *Signature) bool {
 	return total.x.num.Cmp(sig.r.num) == 0
 }
 
-func (p *Point) Sec(compressed bool) string {
+func (p *Point) Sec(compressed bool) (string, []byte) {
 	/*
 		04x
 		y^2 = x^3 + 7
@@ -247,19 +247,44 @@ func (p *Point) Sec(compressed bool) string {
 		03x
 		if y is odd => ok otherwise p-y => odd number
 	*/
+	secBytes := []byte{}
 
 	if !compressed {
-		return fmt.Sprintf("04%064x%064x", p.x.num, p.y.num)
+		secBytes = append(secBytes, 0x04)
+		secBytes = append(secBytes, p.x.num.Bytes()...)
+		secBytes = append(secBytes, p.y.num.Bytes()...)
+		return fmt.Sprintf("04%064x%064x", p.x.num, p.y.num), secBytes
 	}
 
 	// maker sure y is even or odd for the first byte
 	var opMod big.Int
 	if opMod.Mod(p.y.num, big.NewInt(2)).Cmp(big.NewInt(0)) == 0 {
 		// y is even set first byte to 02
-		return fmt.Sprintf("02%064x", p.x.num)
+		secBytes = append(secBytes, 0x02)
+		secBytes = append(secBytes, p.x.num.Bytes()...)
+		return fmt.Sprintf("02%064x", p.x.num), secBytes
 	} else {
 		// y is odd set first byte to 03
-		return fmt.Sprintf("03%064x", p.x.num)
+		secBytes = append(secBytes, 0x03)
+		secBytes = append(secBytes, p.x.num.Bytes()...)
+		return fmt.Sprintf("03%064x", p.x.num), secBytes
 	}
 
+}
+
+func (p *Point) hash160(compressed bool) []byte {
+	_, secBytes := p.Sec(compressed)
+	return Hash160(secBytes)
+}
+
+func (p *Point) Address(compressed, testnet bool) string {
+	hash160 := p.hash160(compressed)
+	prefix := []byte{}
+	if testnet {
+		prefix = append(prefix, 0x6f)
+	} else {
+		prefix = append(prefix, 0x00)
+	}
+
+	return Base58Checksum(append(prefix, hash160...))
 }

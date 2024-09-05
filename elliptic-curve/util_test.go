@@ -17,13 +17,15 @@ func TestParseSEC(t *testing.T) {
 	fmt.Printf("public key is %s\n", pubKey)
 
 	secBinUnCompressed := new(big.Int)
-	secBinUnCompressed.SetString(pubKey.Sec(false), 16)
+	_, secBytes := pubKey.Sec(false)
+	secBinUnCompressed.SetString(string(secBytes), 16)
 	unUnCompressedDecode := ParseSEC(secBinUnCompressed.Bytes())
 	fmt.Printf("decode sec uncompressed format: %s\n", unUnCompressedDecode)
 	assert.True(t, pubKey.Equal(unUnCompressedDecode))
 
 	secBinCompressed := new(big.Int)
-	secBinCompressed.SetString(pubKey.Sec(true), 16)
+	_, secBytes = pubKey.Sec(true)
+	secBinCompressed.SetString(string(secBytes), 16)
 	compressedDecode := ParseSEC(secBinCompressed.Bytes())
 	fmt.Printf("decode sec compressed format: %s\n", compressedDecode)
 	assert.True(t, pubKey.Equal(compressedDecode))

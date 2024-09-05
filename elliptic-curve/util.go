@@ -62,3 +62,36 @@ func ParseSEC(secBin []byte) *Point {
 		return S256Point(x, yOdd.num)
 	}
 }
+
+/*
+base58 it removes 0 o I l
+*/
+func EncodeBase58(s []byte) string {
+	BASE58_ALPHABET := "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
+	count := 0
+	for idx := range s {
+		if s[idx] == 0 {
+			count += 1
+		} else {
+			break
+		}
+	}
+
+	prefix := ""
+	for i := 0; i < count; i++ {
+		prefix += "1"
+	}
+
+	result := ""
+	num := new(big.Int)
+	num.SetBytes(s)
+	for num.Cmp(big.NewInt(0)) > 0 {
+		var divOp big.Int
+		var modOp big.Int
+		mod := modOp.Mod(num, big.NewInt(58))
+		num = divOp.Div(num, big.NewInt(58))
+		result = string(BASE58_ALPHABET[mod.Int64()]) + result
+	}
+
+	return prefix + result
+}

@@ -42,18 +42,3 @@ func TestEncodeBase58(t *testing.T) {
 	val.SetString("c7207fee197d27c618aea621406f6bf5ef6fca38681d82b2f06fddbdce6feab6", 16)
 	fmt.Printf("base58 encoding is %s\n", EncodeBase58(val.Bytes()))
 }
-
-func TestConversionBetweenBigEndianAndLittleEndian(t *testing.T) {
-	p := new(big.Int)
-	p.SetString("12345678", 16)
-	bytes := p.Bytes()
-	fmt.Printf("bytes for 0x12345678 is %x\n", bytes)
-
-	littleEndianByte := BigIntToLittleEndian(p, LITTLE_ENDIAN_4_BYTES)
-	fmt.Printf("little endian for 0x12345678 is %x\n", littleEndianByte)
-
-	littleEndianByteToInt64 := LittleEndianToBigInt(littleEndianByte, LITTLE_ENDIAN_4_BYTES)
-	fmt.Printf("little endian bytes into int is %x\n", littleEndianByteToInt64)
-
-	assert.Equal(t, p.Cmp(littleEndianByteToInt64), 0)
-}

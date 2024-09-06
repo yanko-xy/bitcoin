@@ -16,6 +16,7 @@ type Transaction struct {
 }
 
 func ParseTransaction(binary []byte) *Transaction {
+	transaction := Transaction{}
 	reader := bytes.NewReader(binary)
 	bufReader := bufio.NewReader(reader)
 
@@ -25,7 +26,13 @@ func ParseTransaction(binary []byte) *Transaction {
 	version := LittleEndianToBigInt(verBuf, LITTLE_ENDIAN_4_BYTES)
 	fmt.Printf("transaction version: %x\n", version)
 
-	getInputCount(bufReader)
+	inputs := getInputCount(bufReader)
+	transactionInputs := []*TransactionInput{}
+	for i := 0; i < int(inputs.Int64()); i++ {
+		input := NewTransactionInput(bufReader)
+		transactionInputs = append(transactionInputs, input)
+	}
+	transaction.txInputs = transactionInputs
 
 	return nil
 }

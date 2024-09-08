@@ -63,4 +63,7 @@ func TestTransactionMain(t *testing.T) {
 		panic(err)
 	}
 	ParseTransaction(binary)
+
+	fetcher := NewTransactionInputFetch()
+	fetcher.Fetch("d1c789a9c60383bf715f3f6ad9d14b91fe55f3deb369fe5d9280cb1a01793f81", false)
 }

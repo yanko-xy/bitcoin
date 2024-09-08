@@ -11,11 +11,14 @@ type TransactionInput struct {
 	previousTransactionIndex *big.Int
 	scriptSig                *ScriptSig
 	sqeuence                 *big.Int
+	fetcher                  *TransactionFetcher
 }
 
 func NewTransactionInput(reader *bufio.Reader) *TransactionInput {
 	// first 32 bytes are hash256 of previous transaction
 	transactionInput := &TransactionInput{}
+	transactionInput.fetcher = NewTransactionInputFetch()
+
 	previousTransaction := make([]byte, 32)
 	reader.Read(previousTransaction)
 	// convert it from little endian to big endian
@@ -37,6 +40,14 @@ func NewTransactionInput(reader *bufio.Reader) *TransactionInput {
 	transactionInput.sqeuence = LittleEndianToBigInt(seqBytes, LITTLE_ENDIAN_4_BYTES)
 
 	return transactionInput
+}
+
+func (t *TransactionInput) Value(testnet bool) *big.Int {
+	previousTxID := fmt.Sprintf("%x", t.previousTransactionID)
+	previousTx := t.fetcher.Fetch(previousTxID, testnet)
+	tx := ParseTransaction(previousTx)
+
+	return &tx.txOutputs[t.previousTransactionIndex.Int64()].amount
 }
 
 func reverseByteSlice(bytes []byte) []byte {

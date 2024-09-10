@@ -33,6 +33,8 @@ func NewTransactionInput(reader *bufio.Reader) *TransactionInput {
 	fmt.Printf("previous tansaction index: %x\n", transactionInput.previousTransactionIndex)
 
 	transactionInput.scriptSig = NewScriptSig(reader)
+	scriptBuf := transactionInput.scriptSig.Serialize()
+	fmt.Printf("script bytes: %x\n", scriptBuf)
 
 	// last 4 bytes for sequence
 	seqBytes := make([]byte, 4)

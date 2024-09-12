@@ -15,7 +15,7 @@ func NewSignature(r, s *FieldElement) *Signature {
 }
 
 func (s *Signature) String() string {
-	return fmt.Sprintf("Signature(r: {%s}, v: {%s})", s.r, s.s)
+	return fmt.Sprintf("Signature(r: {%sx}, v: {%s})", s.r, s.s)
 }
 
 /*

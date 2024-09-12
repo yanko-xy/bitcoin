@@ -42,7 +42,7 @@ func NewFieldElement(order, num *big.Int) *FieldElement {
 }
 
 func (f *FieldElement) String() string {
-	return fmt.Sprintf("FieldElement{order: %s, num: %s}\n", f.order.String(), f.num.String())
+	return fmt.Sprintf("FieldElement{order: %x, num: %x}\n", f.order, f.num)
 }
 
 func (f *FieldElement) EqualTo(other *FieldElement) bool {

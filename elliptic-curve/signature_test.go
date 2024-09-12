@@ -16,4 +16,7 @@ func TestSIgnatureDer(t *testing.T) {
 	sig := NewSignature(rField, sField)
 	derEncode := sig.Der()
 	fmt.Printf("der encoding for signature is %x\n", derEncode)
+
+	sig2 := ParseSigBin(derEncode)
+	fmt.Printf("signature parsed from raw binary data is %s\n", sig2)
 }

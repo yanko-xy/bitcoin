@@ -165,5 +165,6 @@ func ParseSigBin(sigBin []byte) *Signature {
 		panic("signature wrong length ")
 	}
 
-	return NewSignature(S256Field(r), S256Field(s))
+	n := GetBitcoinValueN()
+	return NewSignature(NewFieldElement(n, r), NewFieldElement(n, s))
 }

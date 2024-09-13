@@ -1,8 +1,12 @@
 package transaction
 
 import (
+	"bufio"
+	"bytes"
+	ecc "elliptic_curve"
 	"encoding/hex"
 	"fmt"
+	"math/big"
 	"testing"
 )
 
@@ -31,4 +35,47 @@ func TestEvaluate(t *testing.T) {
 	script := InitScriptSig(cmds)
 	evalRes := script.Evaluate(z)
 	fmt.Printf("script evaluation result is :%v", evalRes)
+}
+
+func TestScriptSigMain(t *testing.T) {
+	e := new(big.Int)
+	e.SetBytes([]byte("my secrect"))
+	z := new(big.Int)
+	z.SetBytes([]byte("my message"))
+	privateKey := ecc.NewPrivateKey(e)
+	signature := privateKey.Sign(z)
+	sigDER := signature.Der()
+	// append the last byte as hash type at the end
+	sigDER = append(sigDER, 0x01)
+	fmt.Printf("len sigDER is %d\n", len(sigDER))
+	fmt.Printf("content of sigDER is %x\n", sigDER)
+
+	pubkey := privateKey.GetPublicKey()
+	_, pubKeySec := pubkey.Sec(true)
+	fmt.Printf("len of pub key sec: %d\n", len(pubKeySec))
+	fmt.Printf("pub key sec compressed: %x\n", pubKeySec)
+	pubKeySecHash160 := ecc.Hash160(pubKeySec)
+	fmt.Printf("pub key sec compressed with hash160: %x\n", pubKeySecHash160)
+
+	script := make([]byte, 0)
+	script = append(script, byte(len(sigDER)))
+	script = append(script, sigDER...)
+	script = append(script, byte(len(pubKeySec)))
+	script = append(script, pubKeySec...)
+	script = append(script, OP_DUP)
+	script = append(script, OP_HASH160)
+	script = append(script, byte(len(pubKeySecHash160)))
+	script = append(script, pubKeySecHash160...)
+	script = append(script, OP_EQUALVERIFY)
+	script = append(script, OP_CHECKSIG)
+	scriptLen := len(script)
+	totalLen := EncodeVarint(big.NewInt(int64(scriptLen)))
+	script = append(totalLen, script...)
+	fmt.Printf("script binary data: %x\n", script)
+
+	reader := bytes.NewReader(script)
+	bufReader := bufio.NewReader(reader)
+	scriptSig := NewScriptSig(bufReader)
+	fmt.Printf("serialize of the script object: %x\n", scriptSig.Serialize())
+
 }

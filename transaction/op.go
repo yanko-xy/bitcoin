@@ -1,6 +1,10 @@
 package transaction
 
-import "fmt"
+import (
+	ecc "elliptic_curve"
+	"fmt"
+	"math/big"
+)
 
 const (
 	OP_0 = 0
@@ -221,7 +225,7 @@ func NewBitcoinOpCode() *BitcoinOpCode {
 	}
 }
 
-func (b *BitcoinOpCode) opCheckSig(stack [][]byte, z []byte) bool {
+func (b *BitcoinOpCode) opCheckSig(stack [][]byte, zBin []byte) bool {
 	/*
 		OP_CHECKSIG verify validity of the message z,
 		DER binary data of the signature and the uncompressed sec public key
@@ -233,12 +237,30 @@ func (b *BitcoinOpCode) opCheckSig(stack [][]byte, z []byte) bool {
 		if the signature verification sucess, push 1 on the stack, otherwise push 0
 		on the stack
 	*/
+
 	if len(stack) < 2 {
 		return false
 	}
 	pubKey := stack[len(stack)-1]
 	stack = stack[0 : len(stack)-1]
+	derSig := stack[len(stack)-1]
+	derSig = derSig[0 : len(derSig)-1]
+	stack = stack[0 : len(stack)-1]
 
+	point := ecc.ParseSEC(pubKey)
+	sig := ecc.ParseSigBin(derSig)
+
+	z := new(big.Int)
+	z.SetBytes(zBin)
+	n := ecc.GetBitcoinValueN()
+	zField := ecc.NewFieldElement(n, z)
+	if point.Verify(zField, sig) {
+		stack = append(stack, b.EncodeNum(1))
+	} else {
+		stack = append(stack, b.EncodeNum(0))
+	}
+
+	return true
 }
 
 func (b *BitcoinOpCode) ExecuteOperation(stack, altStack [][]byte, cmd int, cmds [][]byte, z []byte) bool {
@@ -254,7 +276,6 @@ func (b *BitcoinOpCode) ExecuteOperation(stack, altStack [][]byte, cmd int, cmds
 		panic(errStr)
 	}
 
-	return false
 }
 
 func (b *BitcoinOpCode) EncodeNum(num int64) []byte {

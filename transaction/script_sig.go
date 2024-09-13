@@ -6,7 +6,8 @@ import (
 )
 
 type ScriptSig struct {
-	cmds [][]byte
+	cmds          [][]byte
+	bitcoinOpCode *BitcoinOpCode
 }
 
 const (
@@ -16,6 +17,13 @@ const (
 	OP_PUSHDATA1             = 76
 	OP_PUSHDATA2             = 77
 )
+
+func InitScriptSig(cmds [][]byte) *ScriptSig {
+	return &ScriptSig{
+		cmds:          cmds,
+		bitcoinOpCode: NewBitcoinOpCode(),
+	}
+}
 
 /*
 one kind for data operation -> move a chunk of data to stack
@@ -106,9 +114,36 @@ func NewScriptSig(reader *bufio.Reader) *ScriptSig {
 		panic("parsing script field fail")
 	}
 
-	return &ScriptSig{
-		cmds: cmds,
+	return InitScriptSig(cmds)
+}
+
+func (s *ScriptSig) Evaluate(z []byte) bool {
+	stack := make([][]byte, 0)
+	altStack := make([][]byte, 0)
+	for len(s.cmds) > 0 {
+		cmd := s.cmds[0]
+		s.cmds = s.cmds[1:]
+		if len(cmd) == 1 {
+			// this is op code, run it
+			s.bitcoinOpCode.ExecuteOperation(stack, altStack, int(cmd[0]), s.cmds, z)
+		} else {
+			stack = append(stack, cmd)
+		}
 	}
+
+	/*
+		After runing all the operations in the scripts and the stack is empty
+		then evaluation fail, otherwise we check the top element of the stack,
+		if it value is 0, then fail, of the value is not 0, then success
+	*/
+	if len(stack) == 0 {
+		return false
+	}
+	if len(stack[0]) == 0 {
+		return false
+	}
+
+	return true
 }
 
 func (s *ScriptSig) rawSerialize() []byte {

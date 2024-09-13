@@ -1,5 +1,7 @@
 package transaction
 
+import "fmt"
+
 const (
 	OP_0 = 0
 )
@@ -217,6 +219,42 @@ func NewBitcoinOpCode() *BitcoinOpCode {
 	return &BitcoinOpCode{
 		opCodeNames: opCodeNames,
 	}
+}
+
+func (b *BitcoinOpCode) opCheckSig(stack [][]byte, z []byte) bool {
+	/*
+		OP_CHECKSIG verify validity of the message z,
+		DER binary data of the signature and the uncompressed sec public key
+		are top two elements of the stack
+
+		notice!!! we need to remove the last byte of the der binary data, because
+		the byte is used for hash type
+
+		if the signature verification sucess, push 1 on the stack, otherwise push 0
+		on the stack
+	*/
+	if len(stack) < 2 {
+		return false
+	}
+	pubKey := stack[len(stack)-1]
+	stack = stack[0 : len(stack)-1]
+
+}
+
+func (b *BitcoinOpCode) ExecuteOperation(stack, altStack [][]byte, cmd int, cmds [][]byte, z []byte) bool {
+	/*
+		if the operation execute successfully then return true
+		otherwise return false
+	*/
+	switch cmd {
+	case OP_CHECKSIG:
+		return b.opCheckSig(stack, z)
+	default:
+		errStr := fmt.Sprintf("operation %s not implemented\n", b.opCodeNames[cmd])
+		panic(errStr)
+	}
+
+	return false
 }
 
 func (b *BitcoinOpCode) EncodeNum(num int64) []byte {

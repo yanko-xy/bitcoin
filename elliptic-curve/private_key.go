@@ -29,27 +29,27 @@ func (p *PrivateKey) GetPublicKey() *Point {
 }
 
 func (p *PrivateKey) Sign(z *big.Int) *Signature {
-	// (s, r)
-	// s = (z + r + e) / k
+	//(s, r)
+	//s = (z + r * e) / k
 	// k is a strong random number
 	n := GetBitcoinValueN()
 	k, err := rand.Int(rand.Reader, n)
 	if err != nil {
-		panic(fmt.Sprintf("Sign err with rand int: %s\n", err))
+		panic(fmt.Sprintf("Sign err with rand int: %s", err))
 	}
 	kField := NewFieldElement(n, k)
 	G := GetGenerator()
-	// s = (z + r + e) / k
+	// s = (z + r * e) / k
 	// r = G * k
 	r := G.ScalarMul(k).x.num
 	rField := NewFieldElement(n, r)
 	eField := NewFieldElement(n, p.secret)
 	zField := NewFieldElement(n, z)
-	// r * e
+	// r*e
 	rMulSecret := rField.Multiply(eField)
-	// z + r * e
+	// z+r*e
 	zAddRMulSecret := zField.Add(rMulSecret)
-	// / k
+	// /k
 	kInverse := kField.Inverse()
 	sField := zAddRMulSecret.Multiply(kInverse)
 	/*
@@ -58,7 +58,7 @@ func (p *PrivateKey) Sign(z *big.Int) *Signature {
 	   https://bitcoin.stackexchange.com/questions/85946/low-s-value-in-bitcoin-signature
 	*/
 	var opDiv big.Int
-	if sField.num.Cmp(opDiv.Div(n, big.NewInt(2))) > 0 {
+	if sField.num.Cmp(opDiv.Div(n, big.NewInt(int64(2)))) > 0 {
 		var opSub big.Int
 		sField = NewFieldElement(n, opSub.Sub(n, sField.num))
 	}

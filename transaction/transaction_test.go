@@ -63,8 +63,9 @@ func TestTransactionMain(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	ParseTransaction(binary)
+	transaction := ParseTransaction(binary)
+	script := transaction.GetScript(0, false)
+	// this is not our transaction and we don't have its message and private key
+	script.Evaluate([]byte{})
 
-	fetcher := NewTransactionInputFetch()
-	fetcher.Fetch("d1c789a9c60383bf715f3f6ad9d14b91fe55f3deb369fe5d9280cb1a01793f81", false)
 }

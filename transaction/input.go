@@ -49,7 +49,25 @@ func (t *TransactionInput) Value(testnet bool) *big.Int {
 	previousTx := t.fetcher.Fetch(previousTxID, testnet)
 	tx := ParseTransaction(previousTx)
 
-	return &tx.txOutputs[t.previousTransactionIndex.Int64()].amount
+	return tx.txOutputs[t.previousTransactionIndex.Int64()].amount
+}
+
+func (t *TransactionInput) Script(testnet bool) *ScriptSig {
+	previousTxID := fmt.Sprintf("%x", t.previousTransactionID)
+	previousTx := t.fetcher.Fetch(previousTxID, testnet)
+	tx := ParseTransaction(previousTx)
+
+	scriptPubKey := tx.txOutputs[t.previousTransactionIndex.Int64()].scriptPubKey
+	return t.scriptSig.Add(scriptPubKey)
+}
+
+func (t *TransactionInput) Serialize() []byte {
+	result := make([]byte, 0)
+	result = append(result, reverseByteSlice(t.previousTransactionID)...)
+	result = append(result, BigIntToLittleEndian(t.previousTransactionIndex, LITTLE_ENDIAN_4_BYTES)...)
+	result = append(result, t.scriptSig.Serialize()...)
+	result = append(result, BigIntToLittleEndian(t.sqeuence, LITTLE_ENDIAN_4_BYTES)...)
+	return result
 }
 
 func reverseByteSlice(bytes []byte) []byte {

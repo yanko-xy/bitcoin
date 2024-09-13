@@ -50,23 +50,23 @@ s := 7a986d955c6e0cb35d446a89d3f56100f4d7f67801c31967743a9c8e10615bed
 
 func (s *Signature) Der() []byte {
 	rBin := s.r.num.Bytes()
-	// if the first byte >= 0x80, append 0x00 at the beginning
+	//if the first byte >= 0x80, append 0x00 at the beginning
 	if rBin[0] >= 0x80 {
 		rBin = append([]byte{0x00}, rBin...)
 	}
-	// insert indicator 0x02 and the length of rBin
+	//insert indicator 0x02 and the length of rBin
 	rBin = append([]byte{0x02, byte(len(rBin))}, rBin...)
-	// do the same to s
+	//do the same to s
 	sBin := s.s.num.Bytes()
-	// if the first byte of s >= 0x80, append 0x00 at the beginning of s
+	//if the first byte of s >= 0x80, append 0x00 at the beginning of s
 	if sBin[0] >= 0x80 {
 		sBin = append([]byte{0x00}, sBin...)
 	}
-	// insert indicator 0x02 and the length of sBin
+	//insert indicator 0x02 and the length of sBin
 	sBin = append([]byte{0x02, byte(len(sBin))}, sBin...)
-
-	// combine rBin and sBin and insert 0x30 and the total length of rBin and sBin at beginning
+	//combine rBin, sBin and insert 0x30 and the total length of sBin rBin at begining
 	derBin := append([]byte{0x30, byte(len(rBin) + len(sBin))}, rBin...)
 	derBin = append(derBin, sBin...)
+
 	return derBin
 }

@@ -39,9 +39,9 @@ func TestEvaluate(t *testing.T) {
 
 func TestScriptSigMain(t *testing.T) {
 	e := new(big.Int)
-	e.SetBytes([]byte("my secrect"))
+	e.SetBytes([]byte(string("my secrect")))
 	z := new(big.Int)
-	z.SetBytes([]byte("my message"))
+	z.SetBytes([]byte(string("my message")))
 	privateKey := ecc.NewPrivateKey(e)
 	signature := privateKey.Sign(z)
 	sigDER := signature.Der()
@@ -78,4 +78,6 @@ func TestScriptSigMain(t *testing.T) {
 	scriptSig := NewScriptSig(bufReader)
 	fmt.Printf("serialize of the script object: %x\n", scriptSig.Serialize())
 
+	evalRes := scriptSig.Evaluate(z.Bytes())
+	fmt.Printf("result of script evaluation is %v\n", evalRes)
 }

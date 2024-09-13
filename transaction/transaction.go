@@ -92,3 +92,12 @@ func getInputCount(bufReader *bufio.Reader) *big.Int {
 	fmt.Printf("input count is: %x\n", count)
 	return count
 }
+
+func (t *Transaction) GetScript(idx int, testnet bool) *ScriptSig {
+	if idx < 0 || idx > len(t.txInputs) {
+		panic("invalid idx for transaction input")
+	}
+
+	txInputs := t.txInputs[idx]
+	return txInputs.Script(testnet)
+}

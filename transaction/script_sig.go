@@ -19,9 +19,10 @@ const (
 )
 
 func InitScriptSig(cmds [][]byte) *ScriptSig {
+	bitcoinOpCode := NewBitcoinOpCode()
+	bitcoinOpCode.cmds = cmds
 	return &ScriptSig{
-		cmds:          cmds,
-		bitcoinOpCode: NewBitcoinOpCode(),
+		bitcoinOpCode: bitcoinOpCode,
 	}
 }
 
@@ -64,7 +65,7 @@ get elements from the stack, do the operation, push the result on to the stack
 func NewScriptSig(reader *bufio.Reader) *ScriptSig {
 	cmds := [][]byte{}
 	/*
-		At the beginning is the total length of the script field
+		At the beginning is the total length for script field
 	*/
 	scriptLen := ReadVarint(reader).Int64()
 	count := int64(0)
@@ -72,18 +73,19 @@ func NewScriptSig(reader *bufio.Reader) *ScriptSig {
 	var current_byte byte
 	for count < scriptLen {
 		reader.Read(current)
-		// operation
+		//operation
 		count += 1
 		current_byte = current[0]
-		if current_byte >= SCRIPT_DATA_LENGTH_BEGIN && current_byte <= SCRIPT_DATA_LENGTH_END {
-			// push the following bytes of data onto stack
+		if current_byte >= SCRIPT_DATA_LENGTH_BEGIN &&
+			current_byte <= SCRIPT_DATA_LENGTH_END {
+			//push the following bytes of data onto stack
 			data := make([]byte, current_byte)
 			reader.Read(data)
 			cmds = append(cmds, data)
 			count += int64(current_byte)
 		} else if current_byte == OP_PUSHDATA1 {
 			/*
-				read the following bytes as the length of the data
+				read the following byte as the length of data
 			*/
 			length := make([]byte, 1)
 			reader.Read(length)
@@ -94,7 +96,7 @@ func NewScriptSig(reader *bufio.Reader) *ScriptSig {
 			count += int64(length[0] + 1)
 		} else if current_byte == OP_PUSHDATA2 {
 			/*
-				read the following 2 bytes as the length of the data
+				read the following 2 bytes as length of data
 			*/
 			lenBuf := make([]byte, 2)
 			reader.Read(lenBuf)
@@ -102,10 +104,9 @@ func NewScriptSig(reader *bufio.Reader) *ScriptSig {
 			data := make([]byte, length.Int64())
 			reader.Read(data)
 			cmds = append(cmds, data)
-
 			count += int64(2 + length.Int64())
 		} else {
-			// is data processing instruction
+			//is data processing instruction
 			cmds = append(cmds, []byte{current_byte})
 		}
 	}
@@ -118,16 +119,16 @@ func NewScriptSig(reader *bufio.Reader) *ScriptSig {
 }
 
 func (s *ScriptSig) Evaluate(z []byte) bool {
-	stack := make([][]byte, 0)
-	altStack := make([][]byte, 0)
-	for len(s.cmds) > 0 {
-		cmd := s.cmds[0]
-		s.cmds = s.cmds[1:]
+	for s.bitcoinOpCode.HasCmd() {
+		cmd := s.bitcoinOpCode.RemoveCmd()
 		if len(cmd) == 1 {
-			// this is op code, run it
-			s.bitcoinOpCode.ExecuteOperation(stack, altStack, int(cmd[0]), s.cmds, z)
+			//this is an op code, run it
+			opRes := s.bitcoinOpCode.ExecuteOperaion(int(cmd[0]), z)
+			if !opRes {
+				return false
+			}
 		} else {
-			stack = append(stack, cmd)
+			s.bitcoinOpCode.AppendDataElement(cmd)
 		}
 	}
 
@@ -136,10 +137,10 @@ func (s *ScriptSig) Evaluate(z []byte) bool {
 		then evaluation fail, otherwise we check the top element of the stack,
 		if it value is 0, then fail, of the value is not 0, then success
 	*/
-	if len(stack) == 0 {
+	if len(s.bitcoinOpCode.stack) == 0 {
 		return false
 	}
-	if len(stack[0]) == 0 {
+	if len(s.bitcoinOpCode.stack[0]) == 0 {
 		return false
 	}
 
@@ -148,24 +149,24 @@ func (s *ScriptSig) Evaluate(z []byte) bool {
 
 func (s *ScriptSig) rawSerialize() []byte {
 	result := []byte{}
-	for _, cmd := range s.cmds {
+	for _, cmd := range s.bitcoinOpCode.cmds {
 		if len(cmd) == 1 {
-			// only one byte means its an instruction
+			//only one byte means its an instruction
 			result = append(result, cmd...)
 		} else {
 			length := len(cmd)
 			if length <= SCRIPT_DATA_LENGTH_END {
-				// length in [0x01, 0x4d]
+				//length in [0x01, 0x4b]
 				result = append(result, byte(length))
 			} else if length > SCRIPT_DATA_LENGTH_END && length < 0x100 {
-				// this is OP_PUSHDATA1 commmand
-				// push the command and then the next byte is the length of the data
+				//this is OP_PUSHDATA1 command,
+				//push the command and then the next byte is the length of the data
 				result = append(result, OP_PUSHDATA1)
 				result = append(result, byte(length))
 			} else if length >= 0x100 && length <= 520 {
 				/*
 					this is OP_PUSHDATA2 command, we push the command
-					and then two bytes for the data length but in little endian format
+					and then two byte for the data length but in little endian format
 				*/
 				result = append(result, OP_PUSHDATA2)
 				lenBuf := BigIntToLittleEndian(big.NewInt(int64(length)), LITTLE_ENDIAN_2_BYTES)
@@ -174,7 +175,7 @@ func (s *ScriptSig) rawSerialize() []byte {
 				panic("too long an cmd")
 			}
 
-			// append the chunk of data with given length
+			//append the chunk of data with given length
 			result = append(result, cmd...)
 		}
 	}
@@ -183,12 +184,12 @@ func (s *ScriptSig) rawSerialize() []byte {
 }
 
 func (s *ScriptSig) Serialize() []byte {
-	rawSerialize := s.rawSerialize()
-	total := len(rawSerialize)
+	rawResult := s.rawSerialize()
+	total := len(rawResult)
 	result := []byte{}
 	// encode the total length of script at the head
 	result = append(result, EncodeVarint(big.NewInt(int64(total)))...)
-	result = append(result, rawSerialize...)
+	result = append(result, rawResult...)
 	return result
 }
 
@@ -212,3 +213,10 @@ push value onto stack, transfer the value onto byte array and in little edian or
 => [0x80, 0x80, 0x80] => -32892
 
 */
+
+func (s *ScriptSig) Add(script *ScriptSig) *ScriptSig {
+	cmds := make([][]byte, 0)
+	cmds = append(cmds, s.bitcoinOpCode.cmds...)
+	cmds = append(cmds, s.bitcoinOpCode.cmds...)
+	return InitScriptSig(cmds)
+}

@@ -62,6 +62,8 @@ func ParseTransaction(binary []byte) *Transaction {
 		output := NewTransactionOutput(bufReader)
 		transactionOutputs = append(transactionOutputs, output)
 	}
+	transaction.txOutputs = transactionOutputs
+
 	// get last four byte for lock time
 	lockTimeBytes := make([]byte, 4)
 	bufReader.Read(lockTimeBytes)
@@ -100,4 +102,24 @@ func (t *Transaction) GetScript(idx int, testnet bool) *ScriptSig {
 
 	txInputs := t.txInputs[idx]
 	return txInputs.Script(testnet)
+}
+
+func (t *Transaction) Fee() *big.Int {
+	// amount of input - amount of output > 0
+	inputSum := big.NewInt(int64(0))
+	outputSum := big.NewInt(int64(0))
+
+	for i := 0; i < len(t.txInputs); i++ {
+		addOP := new(big.Int)
+		value := t.txInputs[i].Value(t.testnet)
+		inputSum = addOP.Add(inputSum, value)
+	}
+
+	for i := 0; i < len(t.txOutputs); i++ {
+		addOp := new(big.Int)
+		outputSum = addOp.Add(outputSum, t.txOutputs[i].amount)
+	}
+
+	opSub := new(big.Int)
+	return opSub.Sub(inputSum, outputSum)
 }

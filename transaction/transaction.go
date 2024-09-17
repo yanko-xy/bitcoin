@@ -3,8 +3,13 @@ package transaction
 import (
 	"bufio"
 	"bytes"
+	ecc "elliptic_curve"
 	"fmt"
 	"math/big"
+)
+
+const (
+	SIGHASH_ALL = 1
 )
 
 type Transaction struct {
@@ -13,6 +18,70 @@ type Transaction struct {
 	txOutputs []*TransactionOutput
 	lockTime  *big.Int
 	testnet   bool
+}
+
+func (t *Transaction) SignHash(inputIdx int) []byte {
+	/*
+		constract signature message for the giving input indicate by input index,
+		we need to change the given scriptsig with the scriptpubkey from the
+		output of previous transaction, and the do hash256 on the binary transaction
+		data
+	*/
+	signBinary := make([]byte, 0)
+	signBinary = append(signBinary, BigIntToLittleEndian(t.version, LITTLE_ENDIAN_4_BYTES)...)
+
+	inputCount := big.NewInt(int64(len(t.txInputs)))
+	signBinary = append(signBinary, EncodeVarint(inputCount)...)
+
+	/*
+		serialize inputs, need to replace the scriptSig of the given input
+		to scriptPubKey of previous transaction
+	*/
+	for i := 0; i < len(t.txInputs); i++ {
+		if i == inputIdx {
+			t.txInputs[i].ReplaceWithScriptPubKey(t.testnet)
+			signBinary = append(signBinary, t.txInputs[i].Serialize()...)
+		} else {
+			signBinary = append(signBinary, t.txInputs[i].Serialize()...)
+		}
+	}
+
+	outputCount := big.NewInt(int64(len(t.txOutputs)))
+	signBinary = append(signBinary, EncodeVarint(outputCount)...)
+	for i := 0; i < len(t.txOutputs); i++ {
+		signBinary = append(signBinary, t.txOutputs[i].Serialize()...)
+	}
+
+	signBinary = append(signBinary, BigIntToLittleEndian(t.lockTime, LITTLE_ENDIAN_4_BYTES)...)
+	signBinary = append(signBinary, BigIntToLittleEndian(big.NewInt(int64(SIGHASH_ALL)),
+		LITTLE_ENDIAN_4_BYTES)...)
+
+	h256 := ecc.Hash256(string(signBinary))
+	return h256
+}
+
+func (t *Transaction) VerifyInput(inputIdx int) bool {
+	verifyScript := t.GetScript(inputIdx, t.testnet)
+	z := t.SignHash(inputIdx)
+	return verifyScript.Evaluate(z)
+}
+
+func (t *Transaction) Verify() bool {
+	/*
+		1. verify fee
+		2. verify each transaction input
+	*/
+	if t.Fee().Cmp(big.NewInt(int64(0))) < 0 {
+		return false
+	}
+
+	for i := 0; i < len(t.txInputs); i++ {
+		if !t.VerifyInput(i) {
+			return false
+		}
+	}
+
+	return true
 }
 
 func ParseTransaction(binary []byte) *Transaction {
@@ -25,6 +94,7 @@ func ParseTransaction(binary []byte) *Transaction {
 
 	version := LittleEndianToBigInt(verBuf, LITTLE_ENDIAN_4_BYTES)
 	fmt.Printf("transaction version: %x\n", version)
+	transaction.version = version
 
 	inputs := getInputCount(bufReader)
 	transactionInputs := []*TransactionInput{}

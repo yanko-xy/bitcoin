@@ -2,10 +2,10 @@ package transaction
 
 import (
 	"bufio"
+	"encoding/binary"
 	"fmt"
-	"math/big"
-
 	"github.com/tsuna/endian"
+	"math/big"
 )
 
 type LITTLE_ENDIAN_LENGTH int
@@ -19,20 +19,17 @@ const (
 func BigIntToLittleEndian(v *big.Int, length LITTLE_ENDIAN_LENGTH) []byte {
 	switch length {
 	case LITTLE_ENDIAN_2_BYTES:
-		val := v.Int64()
-		littleEndianVal := endian.HostToNetUint16(uint16(val))
-		p := big.NewInt(int64(littleEndianVal))
-		return p.Bytes()
+		bin := make([]byte, 2)
+		binary.LittleEndian.PutUint16(bin, uint16(v.Uint64()))
+		return bin
 	case LITTLE_ENDIAN_4_BYTES:
-		val := v.Int64()
-		littleEndianVal := endian.HostToNetUint32(uint32(val))
-		p := big.NewInt(int64(littleEndianVal))
-		return p.Bytes()
+		bin := make([]byte, 4)
+		binary.LittleEndian.PutUint32(bin, uint32(v.Uint64()))
+		return bin
 	case LITTLE_ENDIAN_8_BYTES:
-		val := v.Int64()
-		littleEndianVal := endian.HostToNetUint64(uint64(val))
-		p := big.NewInt(int64(littleEndianVal))
-		return p.Bytes()
+		bin := make([]byte, 8)
+		binary.LittleEndian.PutUint64(bin, uint64(v.Uint64()))
+		return bin
 	}
 
 	return nil

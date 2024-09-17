@@ -44,11 +44,15 @@ func NewTransactionInput(reader *bufio.Reader) *TransactionInput {
 	return transactionInput
 }
 
-func (t *TransactionInput) Value(testnet bool) *big.Int {
+func (t *TransactionInput) getPreviousTx(testnet bool) *Transaction {
 	previousTxID := fmt.Sprintf("%x", t.previousTransactionID)
 	previousTx := t.fetcher.Fetch(previousTxID, testnet)
 	tx := ParseTransaction(previousTx)
+	return tx
+}
 
+func (t *TransactionInput) Value(testnet bool) *big.Int {
+	tx := t.getPreviousTx(testnet)
 	return tx.txOutputs[t.previousTransactionIndex.Int64()].amount
 }
 
@@ -59,6 +63,16 @@ func (t *TransactionInput) Script(testnet bool) *ScriptSig {
 
 	scriptPubKey := tx.txOutputs[t.previousTransactionIndex.Int64()].scriptPubKey
 	return t.scriptSig.Add(scriptPubKey)
+}
+
+func (t *TransactionInput) scriptPubKey(testnet bool) *ScriptSig {
+	tx := t.getPreviousTx(testnet)
+	return tx.txOutputs[t.previousTransactionIndex.Int64()].scriptPubKey
+}
+
+func (t *TransactionInput) ReplaceWithScriptPubKey(testnet bool) {
+	t.scriptSig = t.scriptPubKey(testnet)
+	fmt.Printf("scriptpubkey: %v\n", t.scriptSig)
 }
 
 func (t *TransactionInput) Serialize() []byte {

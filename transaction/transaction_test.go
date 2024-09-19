@@ -4,6 +4,7 @@ import (
 	ecc "elliptic_curve"
 	"encoding/hex"
 	"fmt"
+	"math/big"
 	"testing"
 )
 
@@ -125,4 +126,15 @@ func TestFee(t *testing.T) {
 	}
 	transaction := ParseTransaction(binary)
 	fmt.Printf("Fee of teh transaction is %v\n", transaction.Fee())
+}
+
+func TestGetWalletAddres(t *testing.T) {
+	p := new(big.Int)
+	h256 := ecc.Hash256("your secret string here")
+	fmt.Printf("h256: %x\n", h256)
+	p.SetBytes(ReverseByteSlice(h256))
+	fmt.Printf("p is your private key value: %x\n", p)
+	privateKey := ecc.NewPrivateKey(p)
+	pubKey := privateKey.GetPublicKey()
+	fmt.Printf("your wallet address: %s\n", pubKey.Address(true, true))
 }

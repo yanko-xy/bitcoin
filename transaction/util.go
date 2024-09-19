@@ -130,3 +130,11 @@ func EncodeVarint(v *big.Int) []byte {
 
 	panic(fmt.Sprintf("integer too large: %x\n", v))
 }
+
+func ReverseByteSlice(bytes []byte) []byte {
+	reverseBytes := []byte{}
+	for i := len(bytes) - 1; i >= 0; i-- {
+		reverseBytes = append(reverseBytes, bytes[i])
+	}
+	return reverseBytes
+}

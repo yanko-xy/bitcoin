@@ -20,7 +20,36 @@ type Transaction struct {
 	testnet   bool
 }
 
-func (t *Transaction) SignHash(inputIdx int) []byte {
+func InitTransaction(version *big.Int, txInputs []*TransactionInput, txOutputs []*TransactionOutput, lockTime *big.Int, testnet bool) *Transaction {
+	return &Transaction{
+		version:   version,
+		txInputs:  txInputs,
+		txOutputs: txOutputs,
+		lockTime:  lockTime,
+		testnet:   testnet,
+	}
+}
+
+func (t *Transaction) String() string {
+	txIns := ""
+	for i := 0; i < len(t.txInputs); i++ {
+		txIns += t.txInputs[i].String()
+		txIns += "\n"
+	}
+	txOuts := ""
+	for i := 0; i < len(t.txOutputs); i++ {
+		txOuts += t.txOutputs[i].String()
+		txOuts += "\n"
+	}
+	return fmt.Sprintf("tx version: %v\n transaction inputs: %x\n transaction outputs: %x\n lockTime: %v\n",
+		t.version,
+		txIns,
+		txOuts,
+		t.lockTime,
+	)
+}
+
+func (t *Transaction) SerializeWithSign(inputIdx int) []byte {
 	/*
 		constract signature message for the giving input indicate by input index,
 		we need to change the given scriptsig with the scriptpubkey from the
@@ -56,6 +85,11 @@ func (t *Transaction) SignHash(inputIdx int) []byte {
 	signBinary = append(signBinary, BigIntToLittleEndian(big.NewInt(int64(SIGHASH_ALL)),
 		LITTLE_ENDIAN_4_BYTES)...)
 
+	return signBinary
+}
+
+func (t *Transaction) SignHash(inputIdx int) []byte {
+	signBinary := t.SerializeWithSign(inputIdx)
 	h256 := ecc.Hash256(string(signBinary))
 	return h256
 }

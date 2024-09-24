@@ -10,8 +10,28 @@ type TransactionInput struct {
 	previousTransactionID    []byte
 	previousTransactionIndex *big.Int
 	scriptSig                *ScriptSig
-	sqeuence                 *big.Int
+	sequence                 *big.Int
 	fetcher                  *TransactionFetcher
+}
+
+func InitTransactionInput(previousTx []byte, previousIndex *big.Int) *TransactionInput {
+	return &TransactionInput{
+		previousTransactionID:    previousTx,
+		previousTransactionIndex: previousIndex,
+		scriptSig:                nil,
+		sequence:                 big.NewInt(int64(0xffffffff)),
+	}
+}
+
+func (t *TransactionInput) String() string {
+	return fmt.Sprintf("previous transaction: %x\n previous tx index: %x\n",
+		t.previousTransactionID,
+		t.previousTransactionIndex,
+	)
+}
+
+func (t *TransactionInput) SetScript(sig *ScriptSig) {
+	t.scriptSig = sig
 }
 
 func NewTransactionInput(reader *bufio.Reader) *TransactionInput {
@@ -24,22 +44,18 @@ func NewTransactionInput(reader *bufio.Reader) *TransactionInput {
 	// convert it from little endian to big endian
 	// reverse the byte array [0x01, 0x02, 0x03, 0x04] -> [0x04, 0x03, 0x02, 0x01]
 	transactionInput.previousTransactionID = reverseByteSlice(previousTransaction)
-	fmt.Printf("previous transaction id: %x\n", transactionInput.previousTransactionID)
 
 	// 4 bytes for previous transaction index
 	idx := make([]byte, 4)
 	reader.Read(idx)
 	transactionInput.previousTransactionIndex = LittleEndianToBigInt(idx, LITTLE_ENDIAN_4_BYTES)
-	fmt.Printf("previous tansaction index: %x\n", transactionInput.previousTransactionIndex)
 
 	transactionInput.scriptSig = NewScriptSig(reader)
-	scriptBuf := transactionInput.scriptSig.Serialize()
-	fmt.Printf("script bytes: %x\n", scriptBuf)
 
 	// last 4 bytes for sequence
 	seqBytes := make([]byte, 4)
 	reader.Read(seqBytes)
-	transactionInput.sqeuence = LittleEndianToBigInt(seqBytes, LITTLE_ENDIAN_4_BYTES)
+	transactionInput.sequence = LittleEndianToBigInt(seqBytes, LITTLE_ENDIAN_4_BYTES)
 
 	return transactionInput
 }
@@ -80,7 +96,7 @@ func (t *TransactionInput) Serialize() []byte {
 	result = append(result, reverseByteSlice(t.previousTransactionID)...)
 	result = append(result, BigIntToLittleEndian(t.previousTransactionIndex, LITTLE_ENDIAN_4_BYTES)...)
 	result = append(result, t.scriptSig.Serialize()...)
-	result = append(result, BigIntToLittleEndian(t.sqeuence, LITTLE_ENDIAN_4_BYTES)...)
+	result = append(result, BigIntToLittleEndian(t.sequence, LITTLE_ENDIAN_4_BYTES)...)
 	return result
 }
 

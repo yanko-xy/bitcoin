@@ -137,4 +137,42 @@ func TestGetWalletAddres(t *testing.T) {
 	privateKey := ecc.NewPrivateKey(p)
 	pubKey := privateKey.GetPublicKey()
 	fmt.Printf("your wallet address: %s\n", pubKey.Address(true, true))
+	walletAddress := pubKey.Address(true, true)
+	res := ecc.DecodeBase58(walletAddress)
+	fmt.Printf("decode result is %x\n", res)
+}
+
+func TestCreateTransactionInstance(t *testing.T) {
+	prevTxHash, err := hex.DecodeString("asd")
+	if err != nil {
+		panic(err)
+	}
+	prevIndex := big.NewInt(int64(1))
+	txInput := InitTransactionInput(prevTxHash, prevIndex)
+
+	/*
+		0.00019756btc
+		send back 0.0001 to myself, and send 0.00009756 as fee to miners
+	*/
+	changeAmount := big.NewInt(int64(0.0001 * STASHI_PRE_BITCOIN))
+	changeH160 := ecc.DecodeBase58("a")
+	changeScript := P2pkScript(changeH160)
+	changeOut := InitTransactionOutPut(changeAmount, changeScript)
+
+	transaction := InitTransaction(big.NewInt(int64(1)), []*TransactionInput{txInput}, []*TransactionOutput{changeOut}, big.NewInt(int64(0)), true)
+	fmt.Printf("%s\n", transaction)
+
+	// sign the first transaction
+	z := transaction.SignHash(0)
+	zMsg := new(big.Int)
+	zMsg.SetBytes(z)
+	der := privateKey.Sign(zMsg).Der()
+	// add the last byte as hash type
+	sig := append(der, byte(SIGHASH_ALL))
+	_, sec := pubKey.Sec(true)
+	scriptSig := InitScriptSig([][]byte{sig, sec})
+	txInput.SetScript(scriptSig)
+
+	rawTx := transaction.SerializeWithSign(-1)
+	fmt.Printf("raw tx: %x\n", rawTx)
 }

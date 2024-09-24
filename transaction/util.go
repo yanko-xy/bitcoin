@@ -11,10 +11,20 @@ import (
 type LITTLE_ENDIAN_LENGTH int
 
 const (
+	STASHI_PRE_BITCOIN = 100000000
+)
+
+const (
 	LITTLE_ENDIAN_2_BYTES = iota
 	LITTLE_ENDIAN_4_BYTES
 	LITTLE_ENDIAN_8_BYTES
 )
+
+func P2pkScript(hash160 []byte) *ScriptSig {
+	scriptContent := [][]byte{[]byte{OP_DUP}, []byte{OP_HASH160}, hash160,
+		[]byte{OP_EQUALVERIFY}, []byte{OP_CHECKSIG}}
+	return InitScriptSig(scriptContent)
+}
 
 func BigIntToLittleEndian(v *big.Int, length LITTLE_ENDIAN_LENGTH) []byte {
 	switch length {

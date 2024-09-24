@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestMain(t *testing.T) {
+func TestMain(m *testing.M) {
 	/*
 		G * k, {G, 2G, ..., nG} n*G->identity generator point
 		k is private key
